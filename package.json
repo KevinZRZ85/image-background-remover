@@ -1,0 +1,12 @@
+{
+  "name": "image-background-remover",
+  "version": "1.0.0",
+  "description": "AI-powered image background removal tool",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
