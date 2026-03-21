@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Background Remover</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .drop-zone {
+      border: 2px dashed #cbd5e1;
+      transition: all 0.3s ease;
+    }
+    .drop-zone.dragover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .loading {
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .compare-slider {
+      position: relative;
+      overflow: hidden;
+    }
+    .compare-slider .original {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 50%;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">
+        🖼️ Image Background Remover
+      </h1>
+      <p class="text-gray-600 text-lg">
+        上传图片，自动去除背景 · 完全免费
+      </p>
+    </div>
+
+    <!-- Upload Area -->
+    <div id="upload-section">
+      <div 
+        id="drop-zone"
+        class="drop-zone bg-white rounded-2xl p-12 text-center cursor-pointer"
+      >
+        <input 
+          type="file" 
+          id="file-input" 
+          accept="image/*" 
+          class="hidden"
+        >
+        <div class="mb-4">
+          <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <p class="text-gray-600 mb-2">拖拽图片到这里，或点击选择</p>
+        <p class="text-gray-400 text-sm">支持 JPG, PNG, WEBP · 最大 10MB</p>
+      </div>
+
+      <!-- Preview -->
+      <div id="preview-section" class="mt-6 hidden">
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-800">预览</h3>
+            <button id="remove-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition">
+              去除背景
+            </button>
+          </div>
+          <img id="preview-img" class="max-h-64 mx-auto rounded-lg" src="" alt="Preview">
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading-section" class="mt-6 hidden">
+        <div class="bg-white rounded-2xl p-12 text-center shadow-sm">
+          <div class="loading mb-4">
+            <svg class="w-16 h-16 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </div>
+          <p class="text-gray-600">正在处理图片...</p>
+          <p class="text-gray-400 text-sm mt-2">通常需要 3-5 秒</p>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="result-section" class="mt-6 hidden">
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-800">结果</h3>
+            <div class="space-x-3">
+              <button id="reset-btn" class="text-gray-600 hover:text-gray-800 px-4 py-2">
+                重新上传
+              </button>
+              <button id="download-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition">
+                下载图片
+              </button>
+            </div>
+          </div>
+          
+          <!-- Compare View -->
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <p class="text-sm text-gray-500 mb-2 text-center">原图</p>
+              <img id="original-img" class="max-h-64 mx-auto rounded-lg border" src="" alt="Original">
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-2 text-center">去除背景后</p>
+              <img id="result-img" class="max-h-64 mx-auto rounded-lg border" src="" alt="Result">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="error-section" class="mt-6 hidden">
+        <div class="bg-red-50 border border-red-200 rounded-2xl p-6">
+          <p id="error-message" class="text-red-600 text-center"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-12 text-center text-gray-400 text-sm">
+      <p>Powered by Remove.bg API</p>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/remove-bg'
+    
+    // DOM Elements
+    const dropZone = document.getElementById('drop-zone')
+    const fileInput = document.getElementById('file-input')
+    const previewSection = document.getElementById('preview-section')
+    const previewImg = document.getElementById('preview-img')
+    const removeBtn = document.getElementById('remove-btn')
+    const loadingSection = document.getElementById('loading-section')
+    const resultSection = document.getElementById('result-section')
+    const originalImg = document.getElementById('original-img')
+    const resultImg = document.getElementById('result-img')
+    const downloadBtn = document.getElementById('download-btn')
+    const resetBtn = document.getElementById('reset-btn')
+    const errorSection = document.getElementById('error-section')
+    const errorMessage = document.getElementById('error-message')
+
+    let currentFile = null
+
+    // Drag & Drop
+    dropZone.addEventListener('click', () => fileInput.click())
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      dropZone.classList.add('dragover')
+    })
+    
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover')
+    })
+    
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault()
+      dropZone.classList.remove('dragover')
+      const file = e.dataTransfer.files[0]
+      if (file) handleFile(file)
+    })
+    
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0]
+      if (file) handleFile(file)
+    })
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showError('请上传图片文件')
+        return
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showError('文件大小不能超过 10MB')
+        return
+      }
+      
+      currentFile = file
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        previewImg.src = e.target.result
+        previewSection.classList.remove('hidden')
+        hideResult()
+        hideError()
+      }
+      reader.readAsDataURL(file)
+    }
+
+    // Remove Background
+    removeBtn.addEventListener('click', async () => {
+      if (!currentFile) return
+      
+      previewSection.classList.add('hidden')
+      loadingSection.classList.remove('hidden')
+      hideError()
+
+      try {
+        const formData = new FormData()
+        formData.append('image', currentFile)
+
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: formData
+        })
+
+        const data = await response.json()
+
+        if (!data.success) {
+          throw new Error(data.error || '处理失败')
+        }
+
+        // Show result
+        originalImg.src = previewImg.src
+        resultImg.src = data.image
+        loadingSection.classList.add('hidden')
+        resultSection.classList.remove('hidden')
+
+      } catch (error) {
+        loadingSection.classList.add('hidden')
+        previewSection.classList.remove('hidden')
+        showError(error.message)
+      }
+    })
+
+    // Download
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a')
+      link.download = 'removed-bg.png'
+      link.href = resultImg.src
+      link.click()
+    })
+
+    // Reset
+    resetBtn.addEventListener('click', () => {
+      currentFile = null
+      fileInput.value = ''
+      previewSection.classList.add('hidden')
+      resultSection.classList.add('hidden')
+      hideError()
+    })
+
+    function showError(msg) {
+      errorMessage.textContent = msg
+      errorSection.classList.remove('hidden')
+    }
+
+    function hideError() {
+      errorSection.classList.add('hidden')
+    }
+
+    function hideResult() {
+      resultSection.classList.add('hidden')
+    }
+  </script>
+</body>
+</html>

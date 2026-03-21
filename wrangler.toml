@@ -1,11 +1,9 @@
-name = "image-background-remover"
-main = "worker.js"
+name = "background-remover"
+main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 [vars]
 REMOVE_BG_API_KEY = ""
 
-# Uncomment for KV storage (if needed later)
-# [[kv_namespaces]]
-# binding = "IMAGES"
-# preview_id = ""
+# 免费版 Workers 限制
+limits = { cpu_ms = 10 }
