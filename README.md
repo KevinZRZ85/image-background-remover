@@ -31,11 +31,7 @@ A simple, fast, and free image background removal tool.
 
 ### Usage
 
-```
-POST /
-Body: { "imageUrl": "https://example.com/image.jpg" }
-Response: { "resultUrl": "https://..." }
-```
+Upload an image and get background removed!
 
 ## 📖 API Documentation
 
@@ -45,7 +41,7 @@ See [API.md](./API.md) for full API reference.
 
 - **Runtime**: Cloudflare Workers
 - **AI**: Remove.bg API
-- **Frontend**: HTML + JavaScript (Vanilla)
+- **Frontend**: HTML + Tailwind CSS
 
 ## 📄 License
 
