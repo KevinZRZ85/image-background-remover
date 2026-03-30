@@ -64,7 +64,12 @@ export default {
 
         // Return the processed image
         const resultBuffer = await apiResponse.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(resultBuffer)));
+        const bytes = new Uint8Array(resultBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
 
         return jsonResponse({
           success: true,
